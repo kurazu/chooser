@@ -2,6 +2,8 @@
 from __future__ import unicode_literals
 import os.path
 import sys
+import shutil
+import functools
 
 import pygtk
 pygtk.require('2.0')
@@ -27,6 +29,19 @@ def read_images(source_dir):
         images.append(filename)
     images.sort()
     return images
+
+
+def file_op(func):
+    @functools.wraps(func)
+    def wrapper(self):
+        if self.busy:
+            return
+        filename = self.images[self.image_idx % len(self.images)]
+        source_path = os.path.join(self.source_dir, filename)
+        target_path = os.path.join(self.target_dir, filename)
+        func(self, source_path, target_path)
+        self.next()
+    return wrapper
 
 
 class Chooser(gtk.Window):
@@ -164,19 +179,13 @@ class Chooser(gtk.Window):
             return
         print 'DELETE'
 
-    def copy_image(self):
-        if self.busy:
-            return
-        print 'COPY'
-        self.notify('COPY')
+    @file_op
+    def copy_image(self, source_path, target_path):
+        shutil.copyfile(source_path, target_path)
 
-    def link_image(self):
-        if self.busy:
-            return
-        #target_path = os.path.join(self.target_dir, '')
-
-    def notify(self, msg):
-        pass
+    @file_op
+    def link_image(self, source_path, target_path):
+        os.symlink(source_path, target_path)
 
 
 def main(orig_dir, target_dir):
