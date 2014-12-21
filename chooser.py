@@ -6,13 +6,10 @@ import sys
 import pygtk
 pygtk.require('2.0')
 import gtk
+import gobject
 
 import exifread
 
-
-
-PATH = '/home/kurazu/Pictures/2014_11_07-USA/2014_11_28-antelope_canyon/IMG_1593.JPG'
-PATH2 = '/home/kurazu/Pictures/2014_11_07-USA/2014_12_06-natural_history_museum/IMG_2437.JPG'
 
 TITLE = 'Chooser'
 
@@ -38,6 +35,7 @@ class Chooser(gtk.Window):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         black = gtk.gdk.color_parse("black")
         self.modify_bg(gtk.STATE_NORMAL, black)
+        self.busy = 0
         self.screen_width = gtk.gdk.screen_width()
         self.screen_height = gtk.gdk.screen_height()
         self.source_dir = source_dir
@@ -127,32 +125,55 @@ class Chooser(gtk.Window):
         return pixbuf
 
     def next(self):
+        if self.busy:
+            return
         self.image.set_from_pixbuf(self.pixbufs[1])
         self.pixbufs[-1] = self.pixbufs[0]
         self.pixbufs[0] = self.pixbufs[1]
         self.image_idx += 1
-        self.pixbufs[1] = self.load_pixmap(
-            self.images[(self.image_idx + 1) % len(self.images)]
+        self.schedule_load(
+            self.images[(self.image_idx + 1) % len(self.images)],
+            1
         )
 
+    def schedule_load(self, filename, idx):
+        self.busy += 1
+
+        def callback():
+            pixmap = self.load_pixmap(filename)
+            self.pixbufs[idx] = pixmap
+            self.busy -= 1
+            return gtk.FALSE
+
+        gobject.idle_add(callback)
+
     def prev(self):
+        if self.busy:
+            return
         self.image.set_from_pixbuf(self.pixbufs[-1])
         self.pixbufs[1] = self.pixbufs[0]
         self.pixbufs[0] = self.pixbufs[-1]
         self.image_idx -= 1
-        self.pixbufs[-1] = self.load_pixmap(
-            self.images[(self.image_idx - 1) % len(self.images)]
+        self.schedule_load(
+            self.images[(self.image_idx - 1) % len(self.images)],
+            -1
         )
 
     def delete_image(self):
+        if self.busy:
+            return
         print 'DELETE'
 
     def copy_image(self):
+        if self.busy:
+            return
         print 'COPY'
         self.notify('COPY')
 
     def link_image(self):
-        target_path = os.path.join(self.target_dir, '')
+        if self.busy:
+            return
+        #target_path = os.path.join(self.target_dir, '')
 
     def notify(self, msg):
         pass
