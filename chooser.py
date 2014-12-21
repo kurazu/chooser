@@ -35,15 +35,17 @@ class Chooser(gtk.Window):
 
     def __init__(self, source_dir, target_dir):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        self.width = gtk.gdk.screen_width()
-        self.height = gtk.gdk.screen_height()
+        black = gtk.gdk.color_parse("black")
+        self.modify_bg(gtk.STATE_NORMAL, black)
+        self.screen_width = gtk.gdk.screen_width()
+        self.screen_height = gtk.gdk.screen_height()
         self.source_dir = source_dir
         self.target_dir = target_dir
         self.images = read_images(source_dir)
         self.set_title(TITLE)
         self.image = gtk.Image()
         pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
-            PATH, self.width, self.height)
+            PATH, self.screen_width, self.screen_height)
         self.image.set_from_pixbuf(pixbuf)
         self.image.show()
 
