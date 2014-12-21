@@ -7,6 +7,8 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
+import exifread
+
 
 
 PATH = '/home/kurazu/Pictures/2014_11_07-USA/2014_11_28-antelope_canyon/IMG_1593.JPG'
@@ -101,8 +103,27 @@ class Chooser(gtk.Window):
 
     def load_pixmap(self, filename):
         path = os.path.join(self.source_dir, filename)
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
-            path, self.screen_width, self.screen_height)
+
+        with open(path, 'rb') as f:
+            tags = exifread.process_file(f)
+
+        orientation = tags.get('Image Orientation')
+        orientation = orientation.printable if orientation else None
+        if orientation == 'Horizontal (normal)':
+            width, height = self.screen_width, self.screen_height
+            rotation = 0
+        elif orientation == 'Rotated 90 CW':
+            width, height = self.screen_height, self.screen_width
+            rotation = 90
+        else:
+            print('Unrecognizable orientation {}'.format(orientation))
+            width, height = self.screen_width, self.screen_height
+            rotation = 0
+
+        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(path, width, height)
+        if rotation:
+            pixbuf = pixbuf.rotate_simple(rotation)
+
         return pixbuf
 
     def next(self):
@@ -131,8 +152,7 @@ class Chooser(gtk.Window):
         self.notify('COPY')
 
     def link_image(self):
-        print 'LINK'
-        self.notify('LINK')
+        target_path = os.path.join(self.target_dir, '')
 
     def notify(self, msg):
         pass
