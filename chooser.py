@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+from __future__ import unicode_literals
 import os.path
 import sys
 
@@ -10,10 +11,6 @@ import gtk
 
 PATH = '/home/kurazu/Pictures/2014_11_07-USA/2014_11_28-antelope_canyon/IMG_1593.JPG'
 PATH2 = '/home/kurazu/Pictures/2014_11_07-USA/2014_12_06-natural_history_museum/IMG_2437.JPG'
-
-WIDTH = 1366
-HEIGHT = 768
-
 
 TITLE = 'Chooser'
 
@@ -28,6 +25,8 @@ def read_images(source_dir):
         if not lowercase_ext in IMAGE_EXTENSIONS:
             # Skip non-images.
             continue
+        images.append(filename)
+    images.sort()
     return images
 
 
@@ -41,12 +40,12 @@ class Chooser(gtk.Window):
         self.screen_height = gtk.gdk.screen_height()
         self.source_dir = source_dir
         self.target_dir = target_dir
-        self.images = read_images(source_dir)
+        self.images = self.load_images()
         self.set_title(TITLE)
         self.image = gtk.Image()
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
-            PATH, self.screen_width, self.screen_height)
-        self.image.set_from_pixbuf(pixbuf)
+        self.pixbufs = self.load_buffers()
+        self.image_idx = 0
+        self.image.set_from_pixbuf(self.pixbufs[0])
         self.image.show()
 
         self.add(self.image)
@@ -57,6 +56,19 @@ class Chooser(gtk.Window):
 
         self.connect("delete_event", self.on_delete_event)
         self.connect("destroy", self.on_destroy)
+
+    def load_images(self):
+        images = read_images(self.source_dir)
+        assert len(images) > 3, u'NO IMAGES'
+        return images
+
+    def load_buffers(self):
+        buffers = {
+            -1: self.load_pixmap(self.images[-1]),
+            0: self.load_pixmap(self.images[0]),
+            1: self.load_pixmap(self.images[1])
+        }
+        return buffers
 
     def on_delete_event(self, widget, event, data=None):
         return False
@@ -87,13 +99,29 @@ class Chooser(gtk.Window):
     def quit(self):
         gtk.main_quit()
 
+    def load_pixmap(self, filename):
+        path = os.path.join(self.source_dir, filename)
+        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
+            path, self.screen_width, self.screen_height)
+        return pixbuf
+
     def next(self):
-        print 'NEXT'
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(PATH2, WIDTH, HEIGHT)
-        self.image.set_from_pixbuf(pixbuf)
+        self.image.set_from_pixbuf(self.pixbufs[1])
+        self.pixbufs[-1] = self.pixbufs[0]
+        self.pixbufs[0] = self.pixbufs[1]
+        self.image_idx += 1
+        self.pixbufs[1] = self.load_pixmap(
+            self.images[(self.image_idx + 1) % len(self.images)]
+        )
 
     def prev(self):
-        print 'PREV'
+        self.image.set_from_pixbuf(self.pixbufs[-1])
+        self.pixbufs[1] = self.pixbufs[0]
+        self.pixbufs[0] = self.pixbufs[-1]
+        self.image_idx -= 1
+        self.pixbufs[-1] = self.load_pixmap(
+            self.images[(self.image_idx - 1) % len(self.images)]
+        )
 
     def delete_image(self):
         print 'DELETE'
@@ -108,6 +136,7 @@ class Chooser(gtk.Window):
 
     def notify(self, msg):
         pass
+
 
 def main(orig_dir, target_dir):
     if os.path.isfile(orig_dir):
