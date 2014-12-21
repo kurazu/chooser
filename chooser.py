@@ -1,10 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 import os.path
 import sys
 
 import pygtk
 pygtk.require('2.0')
-import pynotify
 import gtk
 
 
@@ -36,13 +35,15 @@ class Chooser(gtk.Window):
 
     def __init__(self, source_dir, target_dir):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        self.width = gtk.gdk.screen_width()
+        self.height = gtk.gdk.screen_height()
         self.source_dir = source_dir
         self.target_dir = target_dir
         self.images = read_images(source_dir)
-        pynotify.init(TITLE)
         self.set_title(TITLE)
         self.image = gtk.Image()
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(PATH, WIDTH, HEIGHT)
+        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
+            PATH, self.width, self.height)
         self.image.set_from_pixbuf(pixbuf)
         self.image.show()
 
@@ -104,10 +105,7 @@ class Chooser(gtk.Window):
         self.notify('LINK')
 
     def notify(self, msg):
-        notification = pynotify.Notification(
-            "TITLE", msg, "dialog-information")
-        notification.show()
-
+        pass
 
 def main(orig_dir, target_dir):
     if os.path.isfile(orig_dir):
