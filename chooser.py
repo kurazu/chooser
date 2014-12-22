@@ -71,6 +71,17 @@ class Chooser(gtk.Window):
 
         self.connect("delete_event", self.on_delete_event)
         self.connect("destroy", self.on_destroy)
+        self.connect("key-press-event", self.on_key_press_event)
+
+    def on_key_press_event(self, widget, event):
+        if event.keyval == gtk.keysyms.Right:
+            self.next()
+            return gtk.TRUE
+        elif event.keyval == gtk.keysyms.Left:
+            self.prev()
+            return gtk.TRUE
+        else:
+            return gtk.FALSE
 
     def load_images(self):
         images = read_images(self.source_dir)
@@ -102,14 +113,24 @@ class Chooser(gtk.Window):
         self.accel_group = gtk.AccelGroup()
         self.add_key_handler('Escape', self.quit)
         self.add_key_handler('space', self.next)
-        # self.add_key_handler('Right', self.next)
-        # self.add_key_handler('Left', self.prev)
+        self.add_key_handler('Right', self.right)
+        self.add_key_handler('Left', self.left)
+        self.add_key_handler('Up', self.up)
         self.add_key_handler('BackSpace', self.prev)
         self.add_key_handler('d', self.delete_image)
         self.add_key_handler('c', self.copy_image)
         self.add_key_handler('l', self.link_image)
         self.accel_group.lock()
         self.add_accel_group(self.accel_group)
+
+    def up(self):
+        print 'UP'
+
+    def left(self):
+        print 'LEFT'
+
+    def right(self):
+        print 'RIGHT'
 
     def quit(self):
         gtk.main_quit()
