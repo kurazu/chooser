@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
 from __future__ import unicode_literals
+import os
 import os.path
 import sys
 import shutil
@@ -17,6 +18,8 @@ TITLE = 'Chooser'
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg'}
 
+TARGET_DIR_NAME = 'selected'
+
 
 def read_images(source_dir):
     images = []
@@ -31,17 +34,28 @@ def read_images(source_dir):
     return images
 
 
-def file_op(func):
-    @functools.wraps(func)
-    def wrapper(self):
-        if self.busy:
-            return
-        filename = self.images[self.image_idx % len(self.images)]
-        source_path = os.path.join(self.source_dir, filename)
-        target_path = os.path.join(self.target_dir, filename)
-        func(self, source_path, target_path)
-        self.next()
-    return wrapper
+def file_op(create_target_dir=True, go_next=True):
+    def file_op_decorator(func):
+        @functools.wraps(func)
+        def wrapper(self):
+            if self.busy:
+                return
+            if create_target_dir and not os.path.exists(self.target_dir):
+                os.mkdir(self.target_dir)
+            filename = self.images[self.image_idx % len(self.images)]
+            source_path = os.path.join(self.source_dir, filename)
+            target_path = os.path.join(self.target_dir, filename)
+            func(self, source_path, target_path)
+            if go_next:
+                self.next()
+        return wrapper
+    return file_op_decorator
+
+
+class cyclist(list):
+
+    def __getitem__(self, idx):
+        return super(cyclist, self).__getitem__(idx % len(self))
 
 
 class Chooser(gtk.Window):
@@ -85,8 +99,13 @@ class Chooser(gtk.Window):
 
     def load_images(self):
         images = read_images(self.source_dir)
-        assert len(images) > 3, u'NO IMAGES'
-        return images
+        if not images:
+            placeholder_path = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                'no-image-found.jpg'
+            )
+            images = [placeholder_path]
+        return cyclist(images)
 
     def load_buffers(self):
         buffers = {
@@ -168,7 +187,7 @@ class Chooser(gtk.Window):
         self.pixbufs[0] = self.pixbufs[1]
         self.image_idx += 1
         self.schedule_load(
-            self.images[(self.image_idx + 1) % len(self.images)],
+            self.images[self.image_idx + 1],
             1
         )
 
@@ -191,36 +210,33 @@ class Chooser(gtk.Window):
         self.pixbufs[0] = self.pixbufs[-1]
         self.image_idx -= 1
         self.schedule_load(
-            self.images[(self.image_idx - 1) % len(self.images)],
+            self.images[self.image_idx - 1],
             -1
         )
 
-    def delete_image(self):
-        if self.busy:
-            return
-        print 'DELETE'
+    @file_op(create_target_dir=False)
+    def delete_image(self, source_path, target_path):
+        os.unlink(source_path)
+        # TODO actually remove from watched images
 
-    @file_op
+    @file_op()
     def copy_image(self, source_path, target_path):
         shutil.copyfile(source_path, target_path)
 
-    @file_op
+    @file_op()
     def link_image(self, source_path, target_path):
         os.symlink(source_path, target_path)
 
 
-def main(orig_dir, target_dir):
+def main(orig_dir):
+    orig_dir = os.path.expanduser(orig_dir)
     if os.path.isfile(orig_dir):
-        orig_dir = os.path.basename(orig_dir)
-    assert os.path.isdir(orig_dir)
-    assert os.path.isdir(target_dir)
+        orig_dir = os.path.dirname(orig_dir)
+
+    target_dir = os.path.join(orig_dir, TARGET_DIR_NAME)
+    assert os.path.isdir(orig_dir), '{} is not a dir'.format(orig_dir)
 
     Chooser(orig_dir, target_dir)
-
-    # fixed = gtk.Fixed()
-    # fixed.set_size_request(400, 400)
-    # fixed.put(image, 0, 0)
-    # fixed.show()
 
     gtk.main()
 
