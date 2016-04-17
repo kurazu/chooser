@@ -37,15 +37,30 @@ def on_keypress(widget, event, data=None):
 
 
 def on_picture_loaded(window, picture):
+    print("UI notified about image", picture, "loaded")
     pass
 
 
 def create_ui(task_queue):
     win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+
     win.connect("delete-event", Gtk.main_quit)
     win.connect("key-press-event", on_keypress)
 
-    win.show()
+    #black = Gdk.RGBA(0, 0, 0)
+    #win.override_background_color(Gtk.StateFlags.NORMAL, black)
+
+    overlay = Gtk.Overlay()
+    image = Gtk.Image()
+    overlay.add(image)
+
+    label = Gtk.Label("\u2605\u2606 FILENAME")
+    label.props.valign = Gtk.Align.START
+    label.props.halign = Gtk.Align.START
+    overlay.add_overlay(label)
+
+    win.add(overlay)
+    win.show_all()
     win.fullscreen()
 
     GObject.signal_new(
