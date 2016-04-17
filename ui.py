@@ -41,14 +41,30 @@ def on_picture_loaded(window, picture):
     pass
 
 
+STYLE_DATA = b"""
+GtkLabel {
+    color: black;
+    text-shadow: 1 1 2 white, -1 -1 2 white, 1 -1 2 white, -1 1 2 white;
+}
+GtkWindow {
+    background: black;
+}
+"""
+
+
 def create_ui(task_queue):
+    style_provider = Gtk.CssProvider()
+    assert style_provider.load_from_data(STYLE_DATA)
+    Gtk.StyleContext.add_provider_for_screen(
+         Gdk.Screen.get_default(),
+         style_provider,
+         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
+
     win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 
     win.connect("delete-event", Gtk.main_quit)
     win.connect("key-press-event", on_keypress)
-
-    #black = Gdk.RGBA(0, 0, 0)
-    #win.override_background_color(Gtk.StateFlags.NORMAL, black)
 
     overlay = Gtk.Overlay()
     image = Gtk.Image()
