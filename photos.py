@@ -5,36 +5,57 @@ import queue
 
 import worker
 import ui
+import model
+
+import gi
+gi.require_version('Gtk', '3.0')
+
+from gi.repository import Gtk
 
 
-task_queue = queue.PriorityQueue()
-worker_thread = worker.create_worker(task_queue)
+def run(directory, current_file):
+    print("Running in dir", directory, 'with file', current_file)
 
+    pictures = model.build_model(directory, current_file)
+    print("Loaded pictures", pictures)
 
-def run(directory):
-    print("Running in", directory)
+    current_pic = pictures.current
+    surrounding_pics = pictures.surrounding
+    print("Current pic", current_pic)
+    print("Surrounding pics", surrounding_pics)
+
+    task_queue = queue.PriorityQueue()
+
+    if current_pic:
+        task_queue.put((worker.PRIORITY_HIGH, current_pic))
+    for pic in surrounding_pics:
+        task_queue.put((worker.PRIORITY_MEDIUM, pic))
+
+    win = ui.create_ui(task_queue)
+
+    worker_thread = worker.create_worker(task_queue, win)
     worker_thread.start()
 
-    task_queue.put((0, 7))
-
-    ui.run_ui(task_queue)
+    Gtk.main()
     print("UI finished. Stopping worker thread.")
-    task_queue.put((100, worker.STOP_WORKER))
+    task_queue.put((worker.PRIORITY_LOW, worker.STOP_WORKER))
     print("Wating for worker thread to finish processing.")
     task_queue.join()
     print("Good bye!")
 
 
 def main(file_name):
-    assert file_name, "No input file"
+    assert file_name, "No input file/directory"
     file_name = os.path.expanduser(file_name)
     file_name = os.path.normpath(file_name)
     if os.path.isdir(file_name):
         directory = file_name
+        current_file = None
     else:
         directory = os.path.dirname(file_name)
         assert os.path.isdir(directory), "Not a directory"
-    run(directory)
+        current_file = os.path.basename(file_name)
+    run(directory, current_file)
 
 
 if __name__ == '__main__':
