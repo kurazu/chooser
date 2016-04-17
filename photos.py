@@ -2,6 +2,7 @@
 import os.path
 import sys
 import queue
+import signal
 
 import worker
 import ui
@@ -45,6 +46,7 @@ def run(directory, current_file):
 
 
 def main(file_name):
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     assert file_name, "No input file/directory"
     file_name = os.path.expanduser(file_name)
     file_name = os.path.normpath(file_name)

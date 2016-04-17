@@ -44,8 +44,15 @@ def on_picture_loaded(window, picture):
 STYLE_DATA = b"""
 GtkLabel {
     color: black;
-    text-shadow: 1 1 2 white, -1 -1 2 white, 1 -1 2 white, -1 1 2 white;
+    text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+    padding: 2px;
 }
+
+GtkLabel#star {
+    color: yellow;
+    text-shadow: 1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black;
+}
+
 GtkWindow {
     background: black;
 }
@@ -70,12 +77,28 @@ def create_ui(task_queue):
     image = Gtk.Image()
     overlay.add(image)
 
-    label = Gtk.Label("\u2605\u2606 FILENAME")
-    label.props.valign = Gtk.Align.START
-    label.props.halign = Gtk.Align.START
-    overlay.add_overlay(label)
+    star_label = Gtk.Label("\u2605\u2606")
+    star_label.set_name('star')
+
+    filename_label = Gtk.Label("FILENAME")
+    filename_label.set_name('filename')
+
+    hbox = Gtk.HBox()
+    hbox.add(star_label)
+    hbox.add(filename_label)
+
+    hbox.props.valign = Gtk.Align.START
+    hbox.props.halign = Gtk.Align.START
+    overlay.add_overlay(hbox)
+
+    loading_label = Gtk.Label("Loading...")
+    loading_label.set_name('loading')
+    loading_label.props.valign = Gtk.Align.CENTER
+    loading_label.props.halign = Gtk.Align.CENTER
+    overlay.add_overlay(loading_label)
 
     win.add(overlay)
+
     win.show_all()
     win.fullscreen()
 
