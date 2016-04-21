@@ -29,6 +29,14 @@ class Picture(object):
         assert isinstance(other, Picture)
         return self.filename < other.filename
 
+    def toggle_favourite(self):
+        if self.favourite:
+            os.unlink(self.favourite_marker_path)
+        else:
+            with open(self.favourite_marker_path, 'wb'):
+                pass  # Create empty file
+        self.favourite = self.check_is_favourite()
+
 
 class PictureSet(list):
 

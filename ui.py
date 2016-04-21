@@ -34,7 +34,8 @@ class PictureWindow(Gtk.Window):
         Gdk.KEY_Escape: 'quit',
         Gdk.KEY_space: 'go_to_next',
         Gdk.KEY_Right: 'go_to_next',
-        Gdk.KEY_Left: 'go_to_prev'
+        Gdk.KEY_Left: 'go_to_prev',
+        Gdk.KEY_f: 'toggle_favourite'
     }
 
     FAVOURITE_CHAR = '\u2605'
@@ -119,6 +120,13 @@ class PictureWindow(Gtk.Window):
         if prev_picture and not prev_picture.pixbuf:
             self.task_queue.put((worker.PRIORITY_MEDIUM, prev_picture))
             print("Prev pic", prev_picture, "queued for processing")
+        self.refresh_ui()
+
+    def toggle_favourite(self):
+        current = self.pictures.current
+        if not current:
+            return
+        current.toggle_favourite()
         self.refresh_ui()
 
     def on_picture_loaded(self, window, picture):
