@@ -42,19 +42,48 @@ class PictureSet(list):
 
     @property
     def surrounding(self):
-        if not self.current:  # Empty set of pictures
+        next_item = self.next_picture
+        prev_item = self.prev_picture
+        if next_item is None:
             return []
+        elif next_item is self.current:
+            return []
+        elif prev_item is next_item:
+            return [next_item]
+        else:
+            return [next_item, prev_item]
+
+    @property
+    def next_picture(self):
+        if not self.current:  # Empty set of pictures
+            return None
         current_idx = self.index(self.current)
         next_idx = (current_idx + 1) % len(self)
         next_item = self[next_idx]
+        return next_item
+
+    @property
+    def prev_picture(self):
+        if not self.current:  # Empty set of pictures
+            return None
+        current_idx = self.index(self.current)
         prev_idx = (current_idx - 1) % len(self)
         prev_item = self[prev_idx]
-        if next_item is self:
-            return []
-        elif prev_item is next_item:
-            return [prev_item]
-        else:
-            return [next_item, prev_item]
+        return prev_item
+
+    def forward(self):
+        if not self.current:
+            return None
+        next_item = self.next_picture
+        self.current = next_item
+        return next_item
+
+    def backward(self):
+        if not self.current:
+            return None
+        prev_item = self.prev_picture
+        self.current = prev_item
+        return prev_item
 
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg'}
