@@ -8,39 +8,6 @@ from gi.repository import Gdk
 from gi.repository import GObject
 
 
-
-def go_to_next():
-    pass
-
-
-def go_to_prev():
-    pass
-
-
-KEY_ACTIONS = {
-    Gdk.KEY_Escape: Gtk.main_quit,
-    Gdk.KEY_space: go_to_next,
-    Gdk.KEY_Right: go_to_next,
-    Gdk.KEY_Left: go_to_prev
-}
-
-
-def on_keypress(widget, event, data=None):
-    keyval = event.keyval
-    try:
-        callback = KEY_ACTIONS[keyval]
-    except KeyError:
-        return False
-    else:
-        callback()
-        return True
-
-
-def on_picture_loaded(window, picture):
-    print("UI notified about image", picture, "loaded")
-    pass
-
-
 STYLE_DATA = b"""
 GtkLabel {
     color: black;
@@ -59,7 +26,88 @@ GtkWindow {
 """
 
 
-def create_ui(task_queue):
+class PictureWindow(Gtk.Window):
+
+    KEY_ACTIONS = {
+        Gdk.KEY_Escape: 'quit',
+        Gdk.KEY_space: 'go_to_next',
+        Gdk.KEY_Right: 'go_to_next',
+        Gdk.KEY_Left: 'go_to_prev'
+    }
+
+    def __init__(self):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.connect("delete-event", Gtk.main_quit)
+        self.connect("key-press-event", self.on_keypress)
+
+        self.overlay = Gtk.Overlay()
+        self.image = Gtk.Image()
+        self.overlay.add(self.image)
+
+        self.star_label = Gtk.Label("\u2605\u2606")
+        self.star_label.set_name('star')
+
+        self.filename_label = Gtk.Label("FILENAME")
+        self.filename_label.set_name('filename')
+
+        self.hbox = Gtk.HBox()
+        self.hbox.add(self.star_label)
+        self.hbox.add(self.filename_label)
+
+        self.hbox.props.valign = Gtk.Align.START
+        self.hbox.props.halign = Gtk.Align.START
+        self.overlay.add_overlay(self.hbox)
+
+        self.loading_label = Gtk.Label("Loading...")
+        self.loading_label.set_name('loading')
+        self.loading_label.props.valign = Gtk.Align.CENTER
+        self.loading_label.props.halign = Gtk.Align.CENTER
+        self.overlay.add_overlay(self.loading_label)
+
+        self.add(self.overlay)
+
+        self.show_all()
+        self.fullscreen()
+
+        GObject.signal_new(
+            'picture-loaded',
+            self,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_PYOBJECT,
+            (GObject.TYPE_PYOBJECT, )
+        )
+
+        self.connect('picture-loaded', self.on_picture_loaded)
+
+    def quit(self):
+        Gtk.main_quit()
+
+    def on_keypress(self, widget, event, data=None):
+        keyval = event.keyval
+        try:
+            callback_name = self.KEY_ACTIONS[keyval]
+        except KeyError:
+            return False
+
+        callback = getattr(self, callback_name)
+        callback()
+        return True
+
+    def go_to_next(self):
+        pass
+
+    def go_to_prev(self):
+        pass
+
+    def on_picture_loaded(self, window, picture):
+        print("UI notified about image", picture, "loaded")
+
+
+def refresh_ui():
+    pass
+
+
+def create_ui(task_queue, pictures):
     style_provider = Gtk.CssProvider()
     assert style_provider.load_from_data(STYLE_DATA)
     Gtk.StyleContext.add_provider_for_screen(
@@ -68,48 +116,6 @@ def create_ui(task_queue):
          Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
     )
 
-    win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
-
-    win.connect("delete-event", Gtk.main_quit)
-    win.connect("key-press-event", on_keypress)
-
-    overlay = Gtk.Overlay()
-    image = Gtk.Image()
-    overlay.add(image)
-
-    star_label = Gtk.Label("\u2605\u2606")
-    star_label.set_name('star')
-
-    filename_label = Gtk.Label("FILENAME")
-    filename_label.set_name('filename')
-
-    hbox = Gtk.HBox()
-    hbox.add(star_label)
-    hbox.add(filename_label)
-
-    hbox.props.valign = Gtk.Align.START
-    hbox.props.halign = Gtk.Align.START
-    overlay.add_overlay(hbox)
-
-    loading_label = Gtk.Label("Loading...")
-    loading_label.set_name('loading')
-    loading_label.props.valign = Gtk.Align.CENTER
-    loading_label.props.halign = Gtk.Align.CENTER
-    overlay.add_overlay(loading_label)
-
-    win.add(overlay)
-
-    win.show_all()
-    win.fullscreen()
-
-    GObject.signal_new(
-        'picture-loaded',
-        win,
-        GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_PYOBJECT,
-        (GObject.TYPE_PYOBJECT, )
-    )
-
-    win.connect('picture-loaded', on_picture_loaded)
+    win = PictureWindow()
 
     return win

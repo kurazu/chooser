@@ -32,7 +32,7 @@ def run(directory, current_file):
     for pic in surrounding_pics:
         task_queue.put((worker.PRIORITY_MEDIUM, pic))
 
-    win = ui.create_ui(task_queue)
+    win = ui.create_ui(task_queue, pictures)
 
     worker_thread = worker.create_worker(task_queue, win)
     worker_thread.start()
