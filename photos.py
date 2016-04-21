@@ -29,8 +29,10 @@ def run(directory, current_file):
 
     if current_pic:
         task_queue.put((worker.PRIORITY_HIGH, current_pic))
+        print("Current pic", current_pic, "queued for processing")
     for pic in surrounding_pics:
         task_queue.put((worker.PRIORITY_MEDIUM, pic))
+        print("Surrounding pic", pic, "queued for processing")
 
     win = ui.create_ui(task_queue, pictures)
 

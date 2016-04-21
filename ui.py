@@ -104,15 +104,21 @@ class PictureWindow(Gtk.Window):
         return True
 
     def go_to_next(self):
-        next_picture = self.pictures.forward()
+        current = self.pictures.forward()
+        print("Switched to next pic", current)
+        next_picture = self.pictures.next_picture
         if next_picture and not next_picture.pixbuf:
             self.task_queue.put((worker.PRIORITY_MEDIUM, next_picture))
+            print("Next pic", next_picture, "queued for processing")
         self.refresh_ui()
 
     def go_to_prev(self):
-        prev_picture = self.pictures.backward()
+        current = self.pictures.backward()
+        print("Switched to prev pic", current)
+        prev_picture = self.pictures.prev_picture
         if prev_picture and not prev_picture.pixbuf:
             self.task_queue.put((worker.PRIORITY_MEDIUM, prev_picture))
+            print("Prev pic", prev_picture, "queued for processing")
         self.refresh_ui()
 
     def on_picture_loaded(self, window, picture):
