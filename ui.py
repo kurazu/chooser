@@ -35,8 +35,16 @@ class PictureWindow(Gtk.Window):
         Gdk.KEY_Left: 'go_to_prev'
     }
 
-    def __init__(self):
+    FAVOURITE_CHAR = '\u2605'
+    NOT_FAVOURITE_CHAR = '\u2606'
+    LOADING_TEXT = 'Loading...'
+    EMPTY_TEXT = 'No pictures'
+
+    def __init__(self, task_queue, pictures):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.task_queue = task_queue
+        self.pictures = pictures
+
         self.connect("delete-event", Gtk.main_quit)
         self.connect("key-press-event", self.on_keypress)
 
@@ -44,7 +52,7 @@ class PictureWindow(Gtk.Window):
         self.image = Gtk.Image()
         self.overlay.add(self.image)
 
-        self.star_label = Gtk.Label("\u2605\u2606")
+        self.star_label = Gtk.Label(self.NOT_FAVOURITE_CHAR)
         self.star_label.set_name('star')
 
         self.filename_label = Gtk.Label("FILENAME")
@@ -58,7 +66,7 @@ class PictureWindow(Gtk.Window):
         self.hbox.props.halign = Gtk.Align.START
         self.overlay.add_overlay(self.hbox)
 
-        self.loading_label = Gtk.Label("Loading...")
+        self.loading_label = Gtk.Label(self.LOADING_TEXT)
         self.loading_label.set_name('loading')
         self.loading_label.props.valign = Gtk.Align.CENTER
         self.loading_label.props.halign = Gtk.Align.CENTER
@@ -101,10 +109,36 @@ class PictureWindow(Gtk.Window):
 
     def on_picture_loaded(self, window, picture):
         print("UI notified about image", picture, "loaded")
+        self.refresh_ui()
 
+    def refresh_ui(self):
+        current = self.pictures.current
+        if current is None:
+            self.show_empty()
+        else:
+            self.show_picture(current)
 
-def refresh_ui():
-    pass
+    def show_empty(self):
+        self.filename_label.set_text("")
+        self.star_label.set_text("")
+        self.loading_label.set_visible(True)
+        self.loading_label.set_text(self.EMPTY_TEXT)
+        self.image.set_from_pixbuf(None)
+
+    def show_picture(self, current):
+        self.filename_label.set_text(current.filename)
+        self.star_label.set_text(
+            self.FAVOURITE_CHAR
+            if current.favourite else
+            self.NOT_FAVOURITE_CHAR
+        )
+        if current.pixbuf:
+            self.loading_label.set_visible(False)
+            self.image.set_from_pixbuf(current.pixbuf)
+        else:
+            self.loading_label.set_visible(True)
+            self.loading_label.set_text(self.LOADING_TEXT)
+            self.image.set_from_pixbuf(None)
 
 
 def create_ui(task_queue, pictures):
@@ -116,6 +150,7 @@ def create_ui(task_queue, pictures):
          Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
     )
 
-    win = PictureWindow()
+    win = PictureWindow(task_queue, pictures)
+    win.refresh_ui()
 
     return win
