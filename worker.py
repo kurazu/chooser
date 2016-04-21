@@ -18,11 +18,9 @@ PRIORITY_HIGH = 0
 STOP_WORKER = object()
 
 
-def load_pixmap(source_dir, filename):
+def load_pixmap(path):
     screen_width = Gdk.Screen.width()
     screen_height = Gdk.Screen.height()
-
-    path = os.path.join(source_dir, filename)
 
     with open(path, 'rb') as f:
         tags = exifread.process_file(f)
@@ -58,7 +56,7 @@ def worker_handle(item, window):
         print("Image already loaded")
         return
     print("Loading image", item)
-    item.pixbuf = load_pixmap(item.directory, item.filename)
+    item.pixbuf = load_pixmap(item.file_path)
     print("Loaded image", item)
     GLib.idle_add(notify_window, window, item)
 

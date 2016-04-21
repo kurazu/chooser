@@ -16,6 +16,10 @@ class Picture(object):
         filename = '.{filename}.favourite'.format(filename=self.filename)
         return os.path.join(self.directory, filename)
 
+    @property
+    def file_path(self):
+        return os.path.join(self.directory, self.filename)
+
     def check_is_favourite(self):
         return os.path.isfile(self.favourite_marker_path)
 
@@ -36,6 +40,11 @@ class Picture(object):
             with open(self.favourite_marker_path, 'wb'):
                 pass  # Create empty file
         self.favourite = self.check_is_favourite()
+
+    def remove_file_and_marker(self):
+        if self.favourite:
+            os.unlink(self.favourite_marker_path)
+        os.unlink(self.file_path)
 
 
 class PictureSet(list):
@@ -92,6 +101,18 @@ class PictureSet(list):
         prev_item = self.prev_picture
         self.current = prev_item
         return prev_item
+
+    def remove_current(self):
+        current = self.current
+        if not current:
+            return
+        next_item = self.next_picture
+        if next_item is current:
+            next_item = None
+
+        current.remove_file_and_marker()
+        self.remove(current)
+        self.current = next_item
 
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg'}
