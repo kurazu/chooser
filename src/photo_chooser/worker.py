@@ -74,6 +74,9 @@ class LoadPixmapTask(WorkerTask):
         elif orientation == 'Rotated 90 CW':
             width, height = screen_height, screen_width
             rotation = 90
+        elif orientation == 'Rotated 90 CCW':
+            width, height = screen_height, screen_width
+            rotation = 90
         else:
             print('Unrecognizable orientation {}'.format(orientation))
             width, height = screen_width, screen_height

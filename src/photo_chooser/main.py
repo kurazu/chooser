@@ -4,9 +4,9 @@ import sys
 import queue
 import signal
 
-import worker
-import ui
-import model
+from . import worker
+from . import ui
+from . import model
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -62,5 +62,9 @@ def main(file_name):
     run(directory, current_file)
 
 
-if __name__ == '__main__':
+def startup():
     main(sys.argv[1] if len(sys.argv) > 1 else None)
+
+
+if __name__ == '__main__':
+    startup()

@@ -7,7 +7,7 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GObject
 
-import worker
+from . import worker
 
 
 STYLE_DATA = b"""
