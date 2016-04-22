@@ -6,6 +6,7 @@ import tempfile
 import shutil
 
 import exifread
+from PIL import Image
 
 import gi
 gi.require_version('Gdk', '3.0')
@@ -14,8 +15,6 @@ gi.require_version('GLib', '2.0')
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 from gi.repository import GLib
-
-import model
 
 
 PRIORITY_LOW = 200
@@ -99,7 +98,7 @@ class CopyPicsTask(WorkerTask):
 
     def process(self, window):
         pics = self.argument
-        target_directory = tempfile.mkdtemp('', 'pictures')
+        target_directory = tempfile.mkdtemp('', 'pictures_copied_')
         print('Created target directory', target_directory)
         for pic in pics:
             in_path = pic.file_path
@@ -114,7 +113,19 @@ class ScalePicsTask(WorkerTask):
         return WorkerTask.__new__(cls, PRIORITY_MEDIUM, pics)
 
     def process(self, window):
-        pass
+        pics = self.argument
+        target_directory = tempfile.mkdtemp('', 'pictures_scaled_')
+        print('Created target directory', target_directory)
+        for pic in pics:
+            in_path = pic.file_path
+            out_path = os.path.join(
+                target_directory, 'FULLHD_{}'.format(pic.filename)
+            )
+            image = Image.open(in_path)
+            image.thumbnail((1920, 1080), Image.ANTIALIAS)
+            image.save(out_path, 'JPEG')
+            print('Scaled', in_path, 'to', out_path)
+        print('Scale finished')
 
 
 def work(task_queue, window):
