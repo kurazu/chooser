@@ -36,7 +36,9 @@ class PictureWindow(Gtk.Window):
         Gdk.KEY_Right: 'go_to_next',
         Gdk.KEY_Left: 'go_to_prev',
         Gdk.KEY_f: 'toggle_favourite',
-        Gdk.KEY_x: 'remove_current'
+        Gdk.KEY_x: 'remove_current',
+        Gdk.KEY_c: 'copy_favourites',
+        Gdk.KEY_s: 'copy_and_scale_favourites'
     }
 
     FAVOURITE_CHAR = '\u2605'
@@ -110,7 +112,7 @@ class PictureWindow(Gtk.Window):
         print("Switched to next pic", current)
         next_picture = self.pictures.next_picture
         if next_picture and not next_picture.pixbuf:
-            self.task_queue.put((worker.PRIORITY_MEDIUM, next_picture))
+            self.task_queue.put(worker.LoadPixmapTask(next_picture))
             print("Next pic", next_picture, "queued for processing")
         self.refresh_ui()
 
@@ -119,7 +121,7 @@ class PictureWindow(Gtk.Window):
         print("Switched to prev pic", current)
         prev_picture = self.pictures.prev_picture
         if prev_picture and not prev_picture.pixbuf:
-            self.task_queue.put((worker.PRIORITY_MEDIUM, prev_picture))
+            self.task_queue.put(worker.LoadPixmapTask(prev_picture))
             print("Prev pic", prev_picture, "queued for processing")
         self.refresh_ui()
 
@@ -134,7 +136,7 @@ class PictureWindow(Gtk.Window):
         self.pictures.remove_current()
         next_picture = self.pictures.next_picture
         if next_picture and not next_picture.pixbuf:
-            self.task_queue.put((worker.PRIORITY_MEDIUM, next_picture))
+            self.task_queue.put(worker.LoadPixmapTask(next_picture))
             print("Next pic", next_picture, "queued for processing")
         self.refresh_ui()
 
@@ -170,6 +172,17 @@ class PictureWindow(Gtk.Window):
             self.loading_label.set_visible(True)
             self.loading_label.set_text(self.LOADING_TEXT)
             self.image.set_from_pixbuf(None)
+
+    def copy_favourites(self):
+        favourites = self.pictures.get_favourites()
+        if not favourites:
+            return
+        self.task_queue.put((worker.PRIORITY_LOW, favourites))
+
+    def copy_and_scale_favourites(self):
+        favourites = self.pictures.get_favourites()
+        if not favourites:
+            return
 
 
 def create_ui(task_queue, pictures):

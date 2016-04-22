@@ -28,10 +28,10 @@ def run(directory, current_file):
     task_queue = queue.PriorityQueue()
 
     if current_pic:
-        task_queue.put((worker.PRIORITY_HIGH, current_pic))
+        task_queue.put(worker.LoadCurrentPixmapTask(current_pic))
         print("Current pic", current_pic, "queued for processing")
     for pic in surrounding_pics:
-        task_queue.put((worker.PRIORITY_MEDIUM, pic))
+        task_queue.put(worker.LoadPixmapTask(pic))
         print("Surrounding pic", pic, "queued for processing")
 
     win = ui.create_ui(task_queue, pictures)
@@ -41,7 +41,7 @@ def run(directory, current_file):
 
     Gtk.main()
     print("UI finished. Stopping worker thread.")
-    task_queue.put((worker.PRIORITY_LOW, worker.STOP_WORKER))
+    task_queue.put(worker.StopTask())
     print("Wating for worker thread to finish processing.")
     task_queue.join()
     print("Good bye!")

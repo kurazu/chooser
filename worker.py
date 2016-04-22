@@ -1,3 +1,4 @@
+import collections
 import functools
 import threading
 import os.path
@@ -11,66 +12,112 @@ from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 from gi.repository import GLib
 
-PRIORITY_LOW = 100
-PRIORITY_MEDIUM = 50
-PRIORITY_HIGH = 0
-
-STOP_WORKER = object()
+import model
 
 
-def load_pixmap(path):
-    screen_width = Gdk.Screen.width()
-    screen_height = Gdk.Screen.height()
+PRIORITY_LOW = 200
+PRIORITY_MEDIUM = 100
+PRIORITY_HIGH = 50
+PRIORITY_VERY_HIGH = 0
 
-    with open(path, 'rb') as f:
-        tags = exifread.process_file(f)
-
-    orientation = tags.get('Image Orientation')
-    orientation = orientation.printable if orientation else None
-    if orientation == 'Horizontal (normal)':
-        width, height = screen_width, screen_height
-        rotation = 0
-    elif orientation == 'Rotated 90 CW':
-        width, height = screen_height, screen_width
-        rotation = 90
-    else:
-        print('Unrecognizable orientation {}'.format(orientation))
-        width, height = screen_width, screen_height
-        rotation = 0
-
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(path, width, height)
-    if rotation:
-        pixbuf = pixbuf.rotate_simple(rotation)
-
-    return pixbuf
+WorkerTask = collections.namedtuple(
+    'WorkerTask', ('priority', 'argument')
+)
 
 
-def notify_window(window, item):
-    window.emit('picture-loaded', item)
-    return False
+class StopTask(WorkerTask):
+
+    def __new__(cls):
+        return WorkerTask.__new__(cls, PRIORITY_LOW, None)
+
+    def process(self, window):
+        raise StopIteration()
 
 
-def worker_handle(item, window):
-    print("Worker handling item", item)
-    if item.pixbuf:
-        print("Image already loaded")
-        return
-    print("Loading image", item)
-    item.pixbuf = load_pixmap(item.file_path)
-    print("Loaded image", item)
-    GLib.idle_add(notify_window, window, item)
+class LoadPixmapTask(WorkerTask):
+
+    PRIORITY = PRIORITY_HIGH
+
+    def __new__(cls, pic):
+        return WorkerTask.__new__(cls, cls.PRIORITY, pic)
+
+    def notify_window(self, window, item):
+        window.emit('picture-loaded', item)
+        return False
+
+    def process(self, window):
+        item = self.argument
+        print("Worker handling item", item)
+        if item.pixbuf:
+            print("Image already loaded")
+            return
+        print("Loading image", item)
+        item.pixbuf = self.load_pixmap(item.file_path)
+        print("Loaded image", item)
+        GLib.idle_add(self.notify_window, window, item)
+
+    @staticmethod
+    def load_pixmap(path):
+        screen_width = Gdk.Screen.width()
+        screen_height = Gdk.Screen.height()
+
+        with open(path, 'rb') as f:
+            tags = exifread.process_file(f)
+
+        orientation = tags.get('Image Orientation')
+        orientation = orientation.printable if orientation else None
+        if orientation == 'Horizontal (normal)':
+            width, height = screen_width, screen_height
+            rotation = 0
+        elif orientation == 'Rotated 90 CW':
+            width, height = screen_height, screen_width
+            rotation = 90
+        else:
+            print('Unrecognizable orientation {}'.format(orientation))
+            width, height = screen_width, screen_height
+            rotation = 0
+
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(path, width, height)
+        if rotation:
+            pixbuf = pixbuf.rotate_simple(rotation)
+
+        return pixbuf
+
+
+class LoadCurrentPixmapTask(LoadPixmapTask):
+
+    PRIORITY = PRIORITY_VERY_HIGH
+
+
+class CopyPicsTask(WorkerTask):
+
+    def __new__(cls, pics):
+        return WorkerTask.__new__(cls, PRIORITY_MEDIUM, pics)
+
+    def process(self, window):
+        pass
+
+
+class ScalePicsTask(WorkerTask):
+
+    def __new__(cls, pics):
+        return WorkerTask.__new__(cls, PRIORITY_MEDIUM, pics)
+
+    def process(self, window):
+        pass
 
 
 def work(task_queue, window):
     print("Worker thread started")
     while True:
-        priority, item = task_queue.get()
-        if item is STOP_WORKER:
-            task_queue.task_done()
-            print("Worker STOP signal received")
+        task = task_queue.get()
+        assert isinstance(task, WorkerTask)
+
+        try:
+            task.process(window)
+        except StopIteration:
             break
-        else:
-            worker_handle(item, window)
+        finally:
             task_queue.task_done()
 
 

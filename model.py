@@ -114,6 +114,13 @@ class PictureSet(list):
         self.remove(current)
         self.current = next_item
 
+    def get_favourites(self):
+        return [
+            pic
+            for pic in self
+            if pic.favourite
+        ]
+
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg'}
 
