@@ -2,6 +2,9 @@ import collections
 import functools
 import threading
 import os.path
+import tempfile
+import shutil
+
 import exifread
 
 import gi
@@ -95,7 +98,14 @@ class CopyPicsTask(WorkerTask):
         return WorkerTask.__new__(cls, PRIORITY_MEDIUM, pics)
 
     def process(self, window):
-        pass
+        pics = self.argument
+        target_directory = tempfile.mkdtemp('', 'pictures')
+        print('Created target directory', target_directory)
+        for pic in pics:
+            in_path = pic.file_path
+            out_path = shutil.copy2(in_path, target_directory)
+            print('Copied', in_path, 'to', out_path)
+        print('Copy finished')
 
 
 class ScalePicsTask(WorkerTask):

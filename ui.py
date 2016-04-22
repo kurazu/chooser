@@ -177,12 +177,13 @@ class PictureWindow(Gtk.Window):
         favourites = self.pictures.get_favourites()
         if not favourites:
             return
-        self.task_queue.put((worker.PRIORITY_LOW, favourites))
+        self.task_queue.put(worker.CopyPicsTask(favourites))
 
     def copy_and_scale_favourites(self):
         favourites = self.pictures.get_favourites()
         if not favourites:
             return
+        self.task_queue.put(worker.ScalePicsTask(favourites))
 
 
 def create_ui(task_queue, pictures):
